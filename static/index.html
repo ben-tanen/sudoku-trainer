@@ -9,7 +9,12 @@
 <body>
     <div class="app">
         <header class="header">
-            <h1>Sudoku Trainer</h1>
+            <div class="header-top">
+                <h1>Sudoku Trainer</h1>
+                <button id="mobile-gear-btn" class="mobile-gear-btn" aria-label="Skill Profile">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
             <div class="toolbar">
                 <div class="mode-toggle">
                     <button class="mode-btn active" data-mode="given">Given (G)</button>
@@ -36,7 +41,35 @@
                 </div>
             </div>
 
+            <div class="numpad">
+                <div class="numpad-row">
+                    <button class="numpad-btn" data-digit="1">1</button>
+                    <button class="numpad-btn" data-digit="2">2</button>
+                    <button class="numpad-btn" data-digit="3">3</button>
+                    <button class="numpad-btn" data-digit="4">4</button>
+                    <button class="numpad-btn" data-digit="5">5</button>
+                </div>
+                <div class="numpad-row">
+                    <button class="numpad-btn" data-digit="6">6</button>
+                    <button class="numpad-btn" data-digit="7">7</button>
+                    <button class="numpad-btn" data-digit="8">8</button>
+                    <button class="numpad-btn" data-digit="9">9</button>
+                    <button class="numpad-btn numpad-delete" data-digit="0">&times;</button>
+                </div>
+            </div>
+
+            <div class="mobile-tools">
+                <button id="mobile-validate-btn" class="tool-btn">Check</button>
+                <button id="mobile-auto-candidates-btn" class="tool-btn">AutoCand</button>
+                <button id="mobile-clear-grid-btn" class="tool-btn danger">Clear</button>
+            </div>
+
             <div class="chat-container">
+                <div class="bottom-sheet-handle">
+                    <div class="handle-bar"></div>
+                    <span class="handle-label">Tutor</span>
+                    <button id="mobile-hint-btn" class="hint-btn handle-hint-btn">Get Hint</button>
+                </div>
                 <div class="chat-header">
                     <h2>Tutor</h2>
                     <div class="chat-header-right">

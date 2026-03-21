@@ -386,5 +386,9 @@ const Grid = (() => {
         return currentMode;
     }
 
-    return { init, setMode, setAutoCandidates, setTutorHighlight, validate, getState, getMode, renderAll };
+    function getSelected() {
+        return { row: selectedRow, col: selectedCol };
+    }
+
+    return { init, setMode, setAutoCandidates, setTutorHighlight, validate, getState, getMode, renderAll, enterDigit, clearCell, selectCell, getSelected };
 })();

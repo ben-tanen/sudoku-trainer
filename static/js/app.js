@@ -4,10 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     Chat.init();
     Skills.init();
 
-    // Check Solved button
-    document.getElementById('validate-btn').addEventListener('click', () => {
+    // Check Solved — shared logic for desktop + mobile buttons
+    function flashValidateBtn(btn, originalText) {
         const valid = Grid.validate();
-        const btn = document.getElementById('validate-btn');
         if (valid) {
             btn.textContent = 'All good!';
             btn.classList.add('valid');
@@ -18,9 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.remove('valid');
         }
         setTimeout(() => {
-            btn.textContent = 'Check Solved';
+            btn.textContent = originalText;
             btn.classList.remove('valid', 'invalid');
         }, 2500);
+    }
+
+    document.getElementById('validate-btn').addEventListener('click', () => {
+        flashValidateBtn(document.getElementById('validate-btn'), 'Check Solved');
     });
 
     // Auto-candidates toggle
@@ -47,4 +50,102 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(() => {});
+
+    // --- Mobile: Number pad ---
+    document.querySelectorAll('.numpad-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sel = Grid.getSelected();
+            if (sel.row < 0) return;
+            const digit = parseInt(btn.dataset.digit);
+            if (digit === 0) {
+                Grid.clearCell(sel.row, sel.col);
+            } else {
+                Grid.enterDigit(digit);
+            }
+        });
+    });
+
+    // --- Mobile: Gear button opens skill modal ---
+    document.getElementById('mobile-gear-btn').addEventListener('click', () => {
+        document.getElementById('skill-modal').classList.remove('hidden');
+    });
+
+    // --- Mobile: Tool buttons ---
+    document.getElementById('mobile-validate-btn').addEventListener('click', () => {
+        flashValidateBtn(document.getElementById('mobile-validate-btn'), 'Check');
+    });
+
+    document.getElementById('mobile-auto-candidates-btn').addEventListener('click', () => {
+        acBtn.click();
+        const mobileAcBtn = document.getElementById('mobile-auto-candidates-btn');
+        mobileAcBtn.classList.toggle('active', acBtn.classList.contains('active'));
+        mobileAcBtn.textContent = acEnabled ? 'AutoCand: ON' : 'AutoCand';
+    });
+
+    document.getElementById('mobile-clear-grid-btn').addEventListener('click', () => {
+        document.getElementById('clear-grid-btn').click();
+    });
+
+    // --- Mobile: Bottom sheet ---
+    const chatContainer = document.querySelector('.chat-container');
+    const handle = document.querySelector('.bottom-sheet-handle');
+    let sheetExpanded = false;
+
+    function toggleSheet() {
+        sheetExpanded = !sheetExpanded;
+        chatContainer.classList.toggle('expanded', sheetExpanded);
+    }
+
+    // Tap to toggle
+    handle.addEventListener('click', (e) => {
+        if (e.target.closest('.handle-hint-btn')) return; // don't toggle when hitting hint btn
+        toggleSheet();
+    });
+
+    // Mobile hint button in handle
+    document.getElementById('mobile-hint-btn').addEventListener('click', () => {
+        if (!sheetExpanded) toggleSheet();
+        document.getElementById('hint-btn').click();
+    });
+
+    // Drag to expand/collapse
+    let dragStartY = 0;
+    let dragStartTranslate = 0;
+    let isDragging = false;
+
+    handle.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.handle-hint-btn')) return;
+        isDragging = true;
+        dragStartY = e.touches[0].clientY;
+        const sheetHeight = chatContainer.offsetHeight;
+        const collapsedOffset = sheetHeight - 52;
+        dragStartTranslate = sheetExpanded ? 0 : collapsedOffset;
+        chatContainer.style.transition = 'none';
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const dy = e.touches[0].clientY - dragStartY;
+        const sheetHeight = chatContainer.offsetHeight;
+        const collapsedOffset = sheetHeight - 52;
+        const newTranslate = Math.max(0, Math.min(collapsedOffset, dragStartTranslate + dy));
+        chatContainer.style.transform = `translateY(${newTranslate}px)`;
+    }, { passive: true });
+
+    handle.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        chatContainer.style.transition = '';
+        chatContainer.style.transform = '';
+
+        const dy = e.changedTouches[0].clientY - dragStartY;
+        const threshold = 60;
+
+        if (sheetExpanded && dy > threshold) {
+            sheetExpanded = false;
+        } else if (!sheetExpanded && dy < -threshold) {
+            sheetExpanded = true;
+        }
+        chatContainer.classList.toggle('expanded', sheetExpanded);
+    }, { passive: true });
 });
