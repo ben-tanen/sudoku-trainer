@@ -52,3 +52,8 @@ class HintResponse(BaseModel):
     message: str
     highlight_cells: list[list[int]] | None = None
     technique: TechniqueResult | None = None
+
+
+class OCRResponse(BaseModel):
+    grid: list[list[int]]
+    error: str | None = None

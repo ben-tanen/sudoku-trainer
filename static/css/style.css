@@ -550,11 +550,37 @@ body {
 }
 
 /* Mobile-only elements — hidden on desktop */
-.mobile-gear-btn,
+.mobile-header-icons,
 .numpad,
 .mobile-tools,
 .bottom-sheet-handle {
     display: none;
+}
+
+/* Mobile header icon buttons (camera, gear) */
+.mobile-header-icons {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+}
+
+.mobile-icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-icon-btn:hover {
+    color: var(--text);
+    border-color: var(--accent-dim);
 }
 
 /* Numpad base styles */
@@ -626,29 +652,94 @@ body {
     display: none;
 }
 
-/* Mobile gear button */
-.mobile-gear-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-muted);
-    padding: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-gear-btn:hover {
-    color: var(--text);
-    border-color: var(--accent-dim);
-}
-
 /* Mobile tools row */
 .mobile-tools {
     flex-direction: row;
     justify-content: center;
     gap: 8px;
     padding: 4px 0;
+}
+
+/* OCR Import Modal */
+.ocr-modal-content {
+    width: 420px;
+}
+
+.ocr-paste-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    outline: none;
+}
+
+.ocr-paste-zone:focus,
+.ocr-paste-zone:hover {
+    border-color: var(--accent-dim);
+    background: rgba(79, 195, 247, 0.05);
+}
+
+.ocr-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.ocr-divider::before,
+.ocr-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.ocr-file-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.ocr-file-btn {
+    cursor: pointer;
+    text-align: center;
+}
+
+.ocr-camera-btn {
+    display: none;
+}
+
+.ocr-preview {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.ocr-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.ocr-status {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.ocr-status.ocr-loading {
+    color: var(--accent);
+}
+
+.ocr-status.ocr-error {
+    color: var(--danger);
 }
 
 /* =========================================
@@ -685,10 +776,8 @@ body {
         margin-bottom: 0;
     }
 
-    .mobile-gear-btn {
+    .mobile-header-icons {
         display: flex;
-        align-items: center;
-        justify-content: center;
     }
 
     /* Hide desktop toolbar-right */
@@ -849,6 +938,15 @@ body {
         height: 100%;
         max-height: 100vh;
         border-radius: 0;
+    }
+
+    /* OCR modal: show camera button on mobile */
+    .ocr-camera-btn {
+        display: block;
+    }
+
+    .ocr-modal-content {
+        width: 100%;
     }
 
     /* Prevent double-tap zoom */

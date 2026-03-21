@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Grid.init();
     Chat.init();
     Skills.init();
+    OCR.init();
 
     // Check Solved — shared logic for desktop + mobile buttons
     function flashValidateBtn(btn, originalText) {
@@ -64,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // --- Import buttons ---
+    document.getElementById('import-btn').addEventListener('click', () => OCR.openModal());
+    document.getElementById('mobile-import-btn').addEventListener('click', () => OCR.openModal());
 
     // --- Mobile: Gear button opens skill modal ---
     document.getElementById('mobile-gear-btn').addEventListener('click', () => {

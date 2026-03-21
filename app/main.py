@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.models import HintRequest, HintResponse, ChatRequest
-from app.llm import get_provider_info
+from app.models import HintRequest, HintResponse, ChatRequest, OCRResponse
+from app.llm import get_provider_info, extract_grid_from_image
 from app.solver import analyze, get_candidates
 from app.tutor import get_hint, chat as tutor_chat
 
@@ -64,6 +64,23 @@ async def api_candidates(req: HintRequest):
             if req.puzzle.grid[r][c] == 0 and candidates[r][c]:
                 result[f"r{r+1}c{c+1}"] = sorted(candidates[r][c])
     return result
+
+
+@app.post("/api/ocr", response_model=OCRResponse)
+async def api_ocr(file: UploadFile = File(...)):
+    allowed = {"image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"}
+    if file.content_type not in allowed:
+        return OCRResponse(grid=[], error=f"Unsupported image type: {file.content_type}")
+
+    image_bytes = await file.read()
+    if len(image_bytes) > 10 * 1024 * 1024:
+        return OCRResponse(grid=[], error="Image too large (max 10MB)")
+
+    try:
+        grid = await extract_grid_from_image(image_bytes, file.content_type)
+        return OCRResponse(grid=grid)
+    except Exception as e:
+        return OCRResponse(grid=[], error=f"Could not extract puzzle: {e}")
 
 
 @app.get("/api/provider")

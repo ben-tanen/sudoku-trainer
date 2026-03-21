@@ -390,5 +390,22 @@ const Grid = (() => {
         return { row: selectedRow, col: selectedCol };
     }
 
-    return { init, setMode, setAutoCandidates, setTutorHighlight, validate, getState, getMode, renderAll, enterDigit, clearCell, selectCell, getSelected };
+    function loadPuzzle(gridArray) {
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                const val = gridArray[r][c];
+                grid[r][c].value = val;
+                grid[r][c].source = val > 0 ? 'given' : null;
+                grid[r][c].pencil.clear();
+            }
+        }
+        highlightedDigit = 0;
+        tutorHighlightCells = [];
+        errorCells = [];
+        saveToStorage();
+        setMode('pen');
+        renderAll();
+    }
+
+    return { init, setMode, setAutoCandidates, setTutorHighlight, validate, getState, getMode, renderAll, enterDigit, clearCell, selectCell, getSelected, loadPuzzle };
 })();

@@ -11,9 +11,14 @@
         <header class="header">
             <div class="header-top">
                 <h1>Sudoku Trainer</h1>
-                <button id="mobile-gear-btn" class="mobile-gear-btn" aria-label="Skill Profile">
+                <div class="mobile-header-icons">
+                    <button id="mobile-import-btn" class="mobile-icon-btn" aria-label="Import Puzzle">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </button>
+                    <button id="mobile-gear-btn" class="mobile-icon-btn" aria-label="Skill Profile">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </button>
+                    </button>
+                </div>
             </div>
             <div class="toolbar">
                 <div class="mode-toggle">
@@ -24,6 +29,7 @@
                 <div class="toolbar-right">
                     <button id="validate-btn" class="tool-btn">Check Solved</button>
                     <button id="auto-candidates-btn" class="tool-btn">Auto-Candidates: OFF</button>
+                    <button id="import-btn" class="tool-btn">Import Puzzle</button>
                     <button id="skill-profile-btn" class="tool-btn">Skill Profile</button>
                     <button id="clear-grid-btn" class="tool-btn danger">Clear Grid</button>
                 </div>
@@ -103,9 +109,40 @@
         </div>
     </div>
 
+    <!-- Import Puzzle Modal -->
+    <div id="ocr-modal" class="modal hidden">
+        <div class="modal-content ocr-modal-content">
+            <div class="modal-header">
+                <h2>Import Puzzle from Image</h2>
+                <button id="ocr-modal-close" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="ocr-paste-zone" class="ocr-paste-zone">
+                    Click here and paste an image (Ctrl/Cmd+V)
+                </div>
+                <div class="ocr-divider"><span>or</span></div>
+                <div class="ocr-file-row">
+                    <label class="tool-btn ocr-file-btn">
+                        Upload Image
+                        <input type="file" id="ocr-file-input" accept="image/*" hidden>
+                    </label>
+                    <label class="tool-btn ocr-file-btn ocr-camera-btn">
+                        Take Photo
+                        <input type="file" id="ocr-camera-input" accept="image/*" capture="environment" hidden>
+                    </label>
+                </div>
+                <div id="ocr-preview" class="ocr-preview hidden">
+                    <img id="ocr-preview-img" alt="Preview" />
+                </div>
+                <div id="ocr-status" class="ocr-status"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/grid.js"></script>
     <script src="/static/js/chat.js"></script>
     <script src="/static/js/skills.js"></script>
+    <script src="/static/js/ocr.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>
