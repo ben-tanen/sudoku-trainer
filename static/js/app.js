@@ -96,20 +96,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const handle = document.querySelector('.bottom-sheet-handle');
     let sheetExpanded = false;
 
+    const footer = document.querySelector('.footer');
+
     function toggleSheet() {
         sheetExpanded = !sheetExpanded;
         chatContainer.classList.toggle('expanded', sheetExpanded);
+        if (footer) footer.style.display = sheetExpanded ? 'none' : '';
     }
 
-    // Tap to toggle
+    function openSheet() {
+        if (!sheetExpanded) toggleSheet();
+    }
+
+    function closeSheet() {
+        if (sheetExpanded) toggleSheet();
+    }
+
+    // Mobile tutor button toggles the sheet
+    document.getElementById('mobile-tutor-btn').addEventListener('click', toggleSheet);
+
+    // Tap handle to collapse (when expanded)
     handle.addEventListener('click', (e) => {
-        if (e.target.closest('.handle-hint-btn')) return; // don't toggle when hitting hint btn
-        toggleSheet();
+        if (e.target.closest('.handle-hint-btn')) return;
+        closeSheet();
     });
 
     // Mobile hint button in handle
     document.getElementById('mobile-hint-btn').addEventListener('click', () => {
-        if (!sheetExpanded) toggleSheet();
+        if (!sheetExpanded) openSheet();
         document.getElementById('hint-btn').click();
     });
 
@@ -123,8 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isDragging = true;
         dragStartY = e.touches[0].clientY;
         const sheetHeight = chatContainer.offsetHeight;
-        const collapsedOffset = sheetHeight - 52;
-        dragStartTranslate = sheetExpanded ? 0 : collapsedOffset;
+        dragStartTranslate = sheetExpanded ? 0 : sheetHeight;
         chatContainer.style.transition = 'none';
     }, { passive: true });
 
@@ -132,8 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         const dy = e.touches[0].clientY - dragStartY;
         const sheetHeight = chatContainer.offsetHeight;
-        const collapsedOffset = sheetHeight - 52;
-        const newTranslate = Math.max(0, Math.min(collapsedOffset, dragStartTranslate + dy));
+        const newTranslate = Math.max(0, Math.min(sheetHeight, dragStartTranslate + dy));
         chatContainer.style.transform = `translateY(${newTranslate}px)`;
     }, { passive: true });
 
