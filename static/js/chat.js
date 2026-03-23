@@ -2,6 +2,7 @@
 const Chat = (() => {
     let conversationHistory = [];
     let lastTechnique = null;  // last technique result from solver
+    let seenKeys = [];  // technique keys already shown to user
 
     function init() {
         document.getElementById('hint-btn').addEventListener('click', requestHint);
@@ -60,7 +61,7 @@ const Chat = (() => {
             const resp = await fetch('/api/hint', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ puzzle: state, skill_profile: skills })
+                body: JSON.stringify({ puzzle: state, skill_profile: skills, seen_keys: seenKeys })
             });
 
             if (!resp.ok) throw new Error(`API error: ${resp.status}`);
@@ -71,6 +72,9 @@ const Chat = (() => {
             }
             if (data.technique) {
                 lastTechnique = data.technique;
+            }
+            if (data.technique_key) {
+                seenKeys.push(data.technique_key);
             }
 
             addMessage(data.message, 'tutor');
@@ -121,5 +125,9 @@ const Chat = (() => {
         }
     }
 
-    return { init, addMessage };
+    function resetSeenKeys() {
+        seenKeys = [];
+    }
+
+    return { init, addMessage, resetSeenKeys };
 })();

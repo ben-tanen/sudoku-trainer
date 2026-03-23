@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 from app.llm import complete, get_provider_info
 from app.models import TechniqueResult
+
+log = logging.getLogger(__name__)
 
 TIER_ORDER = {"beginner": 0, "intermediate": 1, "advanced": 2, "expert": 3}
 
@@ -71,17 +75,21 @@ def build_system_prompt(skill_profile: dict[str, bool]) -> str:
     return f"""You are a sudoku tutor. Your job is to help the user learn sudoku-solving techniques — NOT to solve the puzzle for them.
 
 RULES:
-1. NEVER tell the user the value of a specific cell unless they explicitly ask "what is the answer for RxCx?"
-2. Guide them toward finding the answer themselves.
-3. When giving hints, focus on WHERE to look and WHAT technique to apply, not the specific digits.
-4. If the user asks follow-up questions about a technique, explain it conceptually with examples.
-5. Use cell references like R3C5 (Row 3, Column 5) when referring to cells.
-6. Be encouraging but concise.
+1. Start by guiding the user toward finding the answer themselves — focus on WHERE to look and WHAT technique to apply.
+2. If the user asks for the answer directly, is stuck, or asks you to "just tell me" — give it to them clearly. Don't refuse or keep hinting if they've asked for the solution.
+3. If the user asks follow-up questions about a technique, explain it conceptually with examples.
+4. Use cell references like R3C5 (Row 3, Column 5) when referring to cells.
+5. Be encouraging but concise.
+
+UNDERSTANDING THE SOLVER RESULT:
+- The solver provides "eliminations" — these are CANDIDATE REMOVALS, not digit placements. For example, "Eliminate 1 from R3C1" means you can remove 1 as a possibility for that cell, NOT that 1 goes there.
+- Some techniques (like Naked Singles, Hidden Singles) lead directly to placing a digit. Others (like Naked Pairs, X-Wings) only eliminate candidates, which may then reveal placements through subsequent techniques.
+- When explaining the result, be clear about whether the technique places a digit or eliminates candidates. If it only eliminates, explain what that means and suggest the user click "Get Hint" again to find the next step.
 
 HANDLING FOLLOW-UP QUESTIONS:
-- If the user asks "what is [technique]?" or "what does [technique] mean?", they are asking you to EXPLAIN the technique — do NOT treat this as them saying the hint was wrong. Just explain the concept clearly.
-- If the user says they found/placed a digit and asks for confirmation, CHECK the solver's technique result (provided below) to verify. The technique result tells you exactly which cell and digit the solver identified. Confirm if they got it right, or gently redirect if they got the wrong cell/digit.
-- The user may have already entered their answer into the grid before asking for confirmation — that's fine. Use the solver's technique result (not just the current grid state) to verify their answer.
+- If the user asks "what is [technique]?" or "what does [technique] mean?", EXPLAIN the technique — do NOT treat this as them saying the hint was wrong.
+- If the user says they found/placed a digit and asks for confirmation, CHECK the solver's technique result to verify. Confirm if they got it right, or gently redirect if not.
+- The user may have already entered their answer into the grid before asking — that's fine. Use the solver result to verify.
 - Keep your responses concise. Don't over-explain unless the user asks for more detail.
 
 The user's skill profile:
@@ -213,21 +221,26 @@ async def get_hint(
     skill_profile: dict[str, bool],
 ) -> str:
     hint_level = get_hint_level(technique, skill_profile)
+    log.info(f"[hint] technique={technique.technique_id} tier={technique.tier} hint_level={hint_level}")
 
     provider = get_provider_info()
     if not provider["available"]:
+        log.info("[hint] no LLM available, using template")
         return _template_hint(technique, hint_level)
 
     system = build_system_prompt(skill_profile)
     user_msg = build_hint_message(technique, hint_level, grid)
+    log.info(f"[hint] system_prompt_chars={len(system)} user_msg_chars={len(user_msg)}")
 
     try:
-        return await complete(
+        result = await complete(
             system=system,
             messages=[{"role": "user", "content": user_msg}],
         )
+        log.info(f"[hint] response_chars={len(result) if result else 0}")
+        return result
     except Exception as e:
-        print(f"[tutor] LLM hint failed, falling back to template: {e}")
+        log.error(f"[hint] LLM failed, falling back to template: {e}")
         return _template_hint(technique, hint_level)
 
 
@@ -251,12 +264,12 @@ async def chat(
         elim_details = ""
         for e in last_technique.eliminations:
             r, c = e["cell"]
-            elim_details += f"\n  - R{r+1}C{c+1} = {e['digit']}"
+            elim_details += f"\n  - Eliminate {e['digit']} from R{r+1}C{c+1}"
         context += (
             f"\n\nSOLVER RESULT (use this to verify the user's answers):"
             f"\n  Technique: {last_technique.technique_name} ({last_technique.tier})"
             f"\n  Context: {last_technique.explanation_context}"
-            f"\n  Answer:{elim_details}"
+            f"\n  Eliminations (candidates to REMOVE, not place):{elim_details}"
             f"\n\nIMPORTANT: If the user asks to confirm their answer, compare it against the solver result above. "
             f"If they got the right cell and digit, confirm enthusiastically. If they got it wrong, gently redirect."
         )
@@ -281,8 +294,12 @@ async def chat(
     if cleaned and cleaned[0]["role"] != "user":
         cleaned.insert(0, {"role": "user", "content": context})
 
+    log.info(f"[chat] history_msgs={len(history)} cleaned_msgs={len(cleaned)} has_technique={last_technique is not None}")
+
     try:
-        return await complete(system=system, messages=cleaned)
+        result = await complete(system=system, messages=cleaned)
+        log.info(f"[chat] response_chars={len(result) if result else 0}")
+        return result
     except Exception as e:
-        print(f"[tutor] LLM chat failed: {e}")
+        log.error(f"[chat] LLM failed: {e}")
         return f"LLM error: {e}\n\nFalling back to template mode — hints still work!"

@@ -1014,17 +1014,45 @@ TECHNIQUES = [
 TIER_ORDER = {"beginner": 0, "intermediate": 1, "advanced": 2, "expert": 3}
 
 
-def analyze(grid: list[list[int]], skill_profile: dict[str, bool] | None = None) -> TechniqueResult | None:
+def _technique_key(result: TechniqueResult) -> str:
+    """Create a unique key for a technique result to detect duplicates."""
+    cells = sorted(tuple(c) for c in result.affected_cells)
+    elims = sorted((e["cell"][0], e["cell"][1], e["digit"]) for e in result.eliminations)
+    return f"{result.technique_id}:{cells}:{elims}"
+
+
+def analyze(
+    grid: list[list[int]],
+    skill_profile: dict[str, bool] | None = None,
+    seen_keys: list[str] | None = None,
+) -> TechniqueResult | None:
     """Find the simplest applicable technique for the current grid state.
 
     If skill_profile is provided, still searches all techniques but the caller
     can use the tier info to decide how to present the result.
+
+    If seen_keys is provided, skip techniques whose key matches (already shown to user).
+    The solver applies the eliminations from seen techniques to its internal candidate
+    grid so it can find the next logical step.
     """
     candidates = get_candidates(grid)
+
+    if seen_keys:
+        # Apply eliminations from previously seen techniques to advance the solver state
+        for technique_id, finder in TECHNIQUES:
+            result = finder(grid, candidates)
+            if result is not None and _technique_key(result) in seen_keys:
+                # Apply this technique's eliminations to candidates
+                for e in result.eliminations:
+                    r, c = e["cell"]
+                    candidates[r][c].discard(e["digit"])
+                continue
 
     for technique_id, finder in TECHNIQUES:
         result = finder(grid, candidates)
         if result is not None:
+            if seen_keys and _technique_key(result) in seen_keys:
+                continue
             return result
 
     return None

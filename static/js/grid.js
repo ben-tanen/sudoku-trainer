@@ -4,7 +4,8 @@ const Grid = (() => {
         Array.from({ length: 9 }, () => ({
             value: 0,
             source: null,     // 'given' | 'pen' | null
-            pencil: new Set() // manual pencil marks
+            pencil: new Set(), // manual pencil marks
+            eliminated: new Set() // candidates user has removed (when auto-candidates on)
         }))
     );
 
@@ -23,6 +24,7 @@ const Grid = (() => {
             value: cell.value,
             source: cell.source,
             pencil: [...cell.pencil],
+            eliminated: [...cell.eliminated],
         })));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
@@ -37,6 +39,7 @@ const Grid = (() => {
                     grid[r][c].value = data[r][c].value;
                     grid[r][c].source = data[r][c].source;
                     grid[r][c].pencil = new Set(data[r][c].pencil || []);
+                    grid[r][c].eliminated = new Set(data[r][c].eliminated || []);
                 }
             }
         } catch (e) {
@@ -126,13 +129,6 @@ const Grid = (() => {
     function handleKeyDown(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        // Shift+Tab cycles mode (works even without a selected cell)
-        if (e.key === 'Tab' && e.shiftKey) {
-            e.preventDefault();
-            cycleMode(1);
-            return;
-        }
-
         if (selectedRow < 0) return;
 
         // Direct mode shortcuts
@@ -146,13 +142,20 @@ const Grid = (() => {
         if (e.key === 'ArrowLeft') { e.preventDefault(); selectCell(selectedRow, Math.max(0, selectedCol - 1)); return; }
         if (e.key === 'ArrowRight') { e.preventDefault(); selectCell(selectedRow, Math.min(8, selectedCol + 1)); return; }
 
-        // Tab to advance cell (wrapping)
+        // Tab / Shift+Tab to navigate cells
         if (e.key === 'Tab') {
             e.preventDefault();
-            let nextCol = selectedCol + 1;
-            let nextRow = selectedRow;
-            if (nextCol > 8) { nextCol = 0; nextRow = (nextRow + 1) % 9; }
-            selectCell(nextRow, nextCol);
+            if (e.shiftKey) {
+                let prevCol = selectedCol - 1;
+                let prevRow = selectedRow;
+                if (prevCol < 0) { prevCol = 8; prevRow = (prevRow - 1 + 9) % 9; }
+                selectCell(prevRow, prevCol);
+            } else {
+                let nextCol = selectedCol + 1;
+                let nextRow = selectedRow;
+                if (nextCol > 8) { nextCol = 0; nextRow = (nextRow + 1) % 9; }
+                selectCell(nextRow, nextCol);
+            }
             return;
         }
 
@@ -175,18 +178,30 @@ const Grid = (() => {
         const cell = grid[selectedRow][selectedCol];
 
         if (currentMode === 'pencil') {
-            // Toggle pencil mark
             if (cell.value > 0) return; // can't pencil a filled cell
-            if (cell.pencil.has(digit)) {
-                cell.pencil.delete(digit);
+            if (autoCandidates) {
+                // Toggle elimination of an auto-candidate
+                const auto = getAutoCandidate(selectedRow, selectedCol);
+                if (cell.eliminated.has(digit)) {
+                    cell.eliminated.delete(digit);
+                } else if (auto.has(digit)) {
+                    cell.eliminated.add(digit);
+                }
             } else {
-                cell.pencil.add(digit);
+                // Toggle manual pencil mark
+                if (cell.pencil.has(digit)) {
+                    cell.pencil.delete(digit);
+                } else {
+                    cell.pencil.add(digit);
+                }
             }
         } else {
             // Given or Pen mode
             cell.value = (cell.value === digit) ? 0 : digit; // toggle
             cell.source = cell.value > 0 ? currentMode : null;
             cell.pencil.clear();
+            // Grid changed — previous elimination hints no longer relevant
+            if (typeof Chat !== 'undefined') Chat.resetSeenKeys();
         }
 
         saveToStorage();
@@ -197,6 +212,7 @@ const Grid = (() => {
         grid[r][c].value = 0;
         grid[r][c].source = null;
         grid[r][c].pencil.clear();
+        grid[r][c].eliminated.clear();
         saveToStorage();
         renderAll();
     }
@@ -207,12 +223,14 @@ const Grid = (() => {
                 grid[r][c].value = 0;
                 grid[r][c].source = null;
                 grid[r][c].pencil.clear();
+                grid[r][c].eliminated.clear();
             }
         }
         highlightedDigit = 0;
         tutorHighlightCells = [];
         saveToStorage();
         renderAll();
+        if (typeof Chat !== 'undefined') Chat.resetSeenKeys();
     }
 
     function getAutoCandidate(r, c) {
@@ -280,9 +298,12 @@ const Grid = (() => {
                     span.textContent = cell.value;
                     td.appendChild(span);
                 } else {
-                    // Show pencil marks (manual or auto)
+                    // Show pencil marks (manual or auto, minus eliminations)
                     const manualMarks = cell.pencil;
-                    const autoMarks = autoCandidates ? getAutoCandidate(r, c) : new Set();
+                    let autoMarks = autoCandidates ? getAutoCandidate(r, c) : new Set();
+                    if (autoCandidates && cell.eliminated.size > 0) {
+                        autoMarks = new Set([...autoMarks].filter(d => !cell.eliminated.has(d)));
+                    }
                     const hasMarks = manualMarks.size > 0 || autoMarks.size > 0;
 
                     if (hasMarks) {
@@ -351,6 +372,12 @@ const Grid = (() => {
 
     function setAutoCandidates(enabled) {
         autoCandidates = enabled;
+        // Clear all eliminations when toggling auto-candidates
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                grid[r][c].eliminated.clear();
+            }
+        }
         renderAll();
     }
 
@@ -397,6 +424,7 @@ const Grid = (() => {
                 grid[r][c].value = val;
                 grid[r][c].source = val > 0 ? 'given' : null;
                 grid[r][c].pencil.clear();
+                grid[r][c].eliminated.clear();
             }
         }
         highlightedDigit = 0;
@@ -405,6 +433,7 @@ const Grid = (() => {
         saveToStorage();
         setMode('pen');
         renderAll();
+        if (typeof Chat !== 'undefined') Chat.resetSeenKeys();
     }
 
     return { init, setMode, setAutoCandidates, setTutorHighlight, validate, getState, getMode, renderAll, enterDigit, clearCell, selectCell, getSelected, loadPuzzle };

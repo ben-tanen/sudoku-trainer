@@ -261,6 +261,12 @@ body {
     opacity: 0.5;
 }
 
+.sudoku-grid td.selected .pencil-mark,
+.sudoku-grid td.selected .pencil-mark.auto {
+    color: #fff;
+    opacity: 1;
+}
+
 .grid-status {
     display: flex;
     justify-content: space-between;

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+
+log = logging.getLogger(__name__)
 
 
 def _detect_provider() -> tuple[str, str] | None:
@@ -42,7 +45,7 @@ def get_provider_info() -> dict:
 async def complete(
     system: str,
     messages: list[dict[str, str]],
-    max_tokens: int = 500,
+    max_tokens: int = 2000,
 ) -> str:
     """Send a chat completion request to whichever provider is configured.
 
@@ -64,14 +67,21 @@ async def complete(
     provider, api_key = detected
     model = os.environ.get("SUDOKU_LLM_MODEL", DEFAULT_MODELS[provider])
 
+    msg_count = len(messages)
+    last_msg_len = len(messages[-1]["content"]) if messages else 0
+    log.info(f"[complete] provider={provider} model={model} max_tokens={max_tokens} messages={msg_count} last_msg_chars={last_msg_len}")
+
     if provider == "anthropic":
-        return _call_anthropic(api_key, model, system, messages, max_tokens)
+        result = _call_anthropic(api_key, model, system, messages, max_tokens)
     elif provider == "openai":
-        return _call_openai(api_key, model, system, messages, max_tokens)
+        result = _call_openai(api_key, model, system, messages, max_tokens)
     elif provider == "gemini":
-        return _call_gemini(api_key, model, system, messages, max_tokens)
+        result = _call_gemini(api_key, model, system, messages, max_tokens)
     else:
         raise RuntimeError(f"Unknown provider: {provider}")
+
+    log.info(f"[complete] response_chars={len(result) if result else 0} response_preview={repr(result[:100]) if result else 'None'}...")
+    return result
 
 
 def _call_anthropic(
@@ -120,13 +130,32 @@ def _call_gemini(
             parts=[genai.types.Part(text=msg["content"])],
         ))
 
+    # Thinking models (2.5+) share max_output_tokens between thinking and response.
+    # Set an explicit thinking budget so it doesn't consume the output budget.
+    thinking_config = None
+    if "2.5" in model or "2.0" in model:
+        thinking_config = genai.types.ThinkingConfig(thinking_budget=1024)
+        log.info(f"[gemini] thinking model detected, thinking_budget=1024")
+
     response = client.models.generate_content(
         model=model,
         contents=contents,
         config=genai.types.GenerateContentConfig(
             system_instruction=system,
             max_output_tokens=max_tokens,
+            thinking_config=thinking_config,
         ),
+    )
+
+    # Log Gemini-specific metadata
+    candidate = response.candidates[0] if response.candidates else None
+    finish_reason = candidate.finish_reason if candidate else "no_candidate"
+    usage = response.usage_metadata
+    log.info(
+        f"[gemini] finish_reason={finish_reason} "
+        f"prompt_tokens={usage.prompt_token_count if usage else '?'} "
+        f"response_tokens={usage.candidates_token_count if usage else '?'} "
+        f"total_tokens={usage.total_token_count if usage else '?'}"
     )
     return response.text
 
@@ -163,6 +192,7 @@ async def extract_grid_from_image(image_bytes: bytes, mime_type: str) -> list[li
     from google import genai
     client = genai.Client(api_key=api_key)
     model = os.environ.get("SUDOKU_OCR_MODEL", "gemini-2.5-pro")
+    log.info(f"[ocr] model={model} mime_type={mime_type} image_bytes={len(image_bytes)}")
 
     # Pass 1: read the grid row-by-row (chain of thought)
     contents = [
@@ -187,11 +217,11 @@ async def extract_grid_from_image(image_bytes: bytes, mime_type: str) -> list[li
 
     if not pass1.text:
         # Log the full response for debugging
-        print(f"[OCR] Pass 1 returned no text. Candidates: {pass1.candidates}")
+        log.error(f"[ocr] pass 1 returned no text. candidates: {pass1.candidates}")
         raise RuntimeError("Gemini returned an empty response — the model may be overloaded. Try again.")
 
     reading = pass1.text.strip()
-    print(f"[OCR] Pass 1 (row-by-row reading):\n{reading}")
+    log.info(f"[ocr] pass 1 (row-by-row reading):\n{reading}")
 
     # Pass 2: convert the reading to clean JSON
     contents.append(genai.types.Content(
@@ -206,11 +236,11 @@ async def extract_grid_from_image(image_bytes: bytes, mime_type: str) -> list[li
     )
 
     if not pass2.text:
-        print(f"[OCR] Pass 2 returned no text. Candidates: {pass2.candidates}")
+        log.error(f"[ocr] pass 2 returned no text. candidates: {pass2.candidates}")
         raise RuntimeError("Gemini returned an empty response on pass 2. Try again.")
 
     text = pass2.text.strip()
-    print(f"[OCR] Pass 2 (JSON):\n{text}")
+    log.info(f"[ocr] pass 2 (JSON):\n{text}")
 
     # Strip markdown code fences if present
     text = re.sub(r"^```(?:json)?\s*", "", text)

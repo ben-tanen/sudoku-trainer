@@ -38,6 +38,7 @@ class TechniqueResult(BaseModel):
 class HintRequest(BaseModel):
     puzzle: PuzzleState
     skill_profile: dict[str, bool]
+    seen_keys: list[str] | None = None
 
 
 class ChatRequest(BaseModel):
@@ -52,6 +53,7 @@ class HintResponse(BaseModel):
     message: str
     highlight_cells: list[list[int]] | None = None
     technique: TechniqueResult | None = None
+    technique_key: str | None = None
 
 
 class OCRResponse(BaseModel):
