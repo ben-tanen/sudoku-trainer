@@ -1025,6 +1025,7 @@ def analyze(
     grid: list[list[int]],
     skill_profile: dict[str, bool] | None = None,
     seen_keys: list[str] | None = None,
+    user_eliminated: dict[str, list[int]] | None = None,
 ) -> TechniqueResult | None:
     """Find the simplest applicable technique for the current grid state.
 
@@ -1034,8 +1035,20 @@ def analyze(
     If seen_keys is provided, skip techniques whose key matches (already shown to user).
     The solver applies the eliminations from seen techniques to its internal candidate
     grid so it can find the next logical step.
+
+    If user_eliminated is provided, apply these eliminations to candidates before
+    searching for techniques. Format: {"r1c2": [3,5], ...} (1-indexed).
     """
     candidates = get_candidates(grid)
+
+    # Apply user's candidate eliminations so we don't recommend already-done work
+    if user_eliminated:
+        for cell_key, digits in user_eliminated.items():
+            # cell_key format: "r<row>c<col>" (1-indexed)
+            parts = cell_key.replace("r", "").split("c")
+            r, c = int(parts[0]) - 1, int(parts[1]) - 1
+            for d in digits:
+                candidates[r][c].discard(d)
 
     if seen_keys:
         # Apply eliminations from previously seen techniques to advance the solver state

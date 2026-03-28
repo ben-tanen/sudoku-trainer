@@ -5,6 +5,7 @@ class PuzzleState(BaseModel):
     grid: list[list[int]]       # 9x9, 0 = empty
     given: list[list[int]]      # 9x9, 1 = given, 0 = user-entered
     candidates: dict[str, list[int]]  # "r1c2": [3,5,7] - manual pencil marks
+    eliminated: dict[str, list[int]] = {}  # "r1c2": [1,2] - user-eliminated candidates
 
 
 class SkillProfile(BaseModel):

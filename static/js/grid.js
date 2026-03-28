@@ -175,6 +175,7 @@ const Grid = (() => {
 
     function enterDigit(digit) {
         errorCells = [];  // clear validation errors on any edit
+        tutorHighlightCells = [];  // clear tutor highlights on user action
         const cell = grid[selectedRow][selectedCol];
 
         if (currentMode === 'pencil') {
@@ -206,6 +207,30 @@ const Grid = (() => {
 
         saveToStorage();
         renderAll();
+
+        // Auto-check when grid is fully filled
+        if (currentMode !== 'pencil' && isFilled()) {
+            const valid = validate();
+            if (valid) {
+                showSolvedEffect();
+            }
+        }
+    }
+
+    function isFilled() {
+        for (let r = 0; r < 9; r++)
+            for (let c = 0; c < 9; c++)
+                if (grid[r][c].value === 0) return false;
+        return true;
+    }
+
+    function showSolvedEffect() {
+        const table = document.getElementById('sudoku-grid');
+        table.classList.add('solved');
+        setTimeout(() => table.classList.remove('solved'), 3000);
+        if (typeof Chat !== 'undefined') {
+            Chat.addMessage('🎉 Puzzle solved! Nice work! 🧩✨', 'solved');
+        }
     }
 
     function clearCell(r, c) {
@@ -372,12 +397,6 @@ const Grid = (() => {
 
     function setAutoCandidates(enabled) {
         autoCandidates = enabled;
-        // Clear all eliminations when toggling auto-candidates
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                grid[r][c].eliminated.clear();
-            }
-        }
         renderAll();
     }
 
@@ -390,6 +409,7 @@ const Grid = (() => {
         const values = [];
         const given = [];
         const candidates = {};
+        const eliminated = {};
 
         for (let r = 0; r < 9; r++) {
             const rowVals = [];
@@ -401,12 +421,15 @@ const Grid = (() => {
                 if (cell.pencil.size > 0) {
                     candidates[`r${r + 1}c${c + 1}`] = [...cell.pencil].sort();
                 }
+                if (cell.eliminated.size > 0) {
+                    eliminated[`r${r + 1}c${c + 1}`] = [...cell.eliminated].sort();
+                }
             }
             values.push(rowVals);
             given.push(rowGiven);
         }
 
-        return { grid: values, given, candidates };
+        return { grid: values, given, candidates, eliminated };
     }
 
     function getMode() {

@@ -204,6 +204,27 @@ body {
     color: var(--danger);
 }
 
+/* Solved celebration */
+.sudoku-grid.solved {
+    animation: solved-glow 1.5s ease-in-out;
+}
+
+.sudoku-grid.solved td {
+    animation: solved-cell-flash 1.5s ease-in-out;
+}
+
+@keyframes solved-glow {
+    0%   { box-shadow: 0 0 0 rgba(102, 187, 106, 0); }
+    30%  { box-shadow: 0 0 30px rgba(102, 187, 106, 0.6), 0 0 60px rgba(102, 187, 106, 0.3); }
+    100% { box-shadow: 0 0 0 rgba(102, 187, 106, 0); }
+}
+
+@keyframes solved-cell-flash {
+    0%   { background: inherit; }
+    30%  { background: rgba(102, 187, 106, 0.2); }
+    100% { background: inherit; }
+}
+
 .tool-btn.valid {
     border-color: #66bb6a;
     color: #66bb6a;
@@ -363,6 +384,15 @@ body {
 .message.user {
     background: var(--accent-dim);
     align-self: flex-end;
+}
+
+.message.solved {
+    background: rgba(102, 187, 106, 0.35) !important;
+    border: 2px solid #66bb6a !important;
+    color: #c8e6c9;
+    align-self: flex-start;
+    font-weight: 500;
+    font-size: 15px;
 }
 
 .message p {

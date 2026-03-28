@@ -57,6 +57,7 @@ const Chat = (() => {
         const skills = Skills.getProfile();
 
         setLoading(true);
+        Grid.setTutorHighlight([]);  // Clear previous highlight
         try {
             const resp = await fetch('/api/hint', {
                 method: 'POST',
@@ -67,9 +68,7 @@ const Chat = (() => {
             if (!resp.ok) throw new Error(`API error: ${resp.status}`);
             const data = await resp.json();
 
-            if (data.highlight_cells) {
-                Grid.setTutorHighlight(data.highlight_cells);
-            }
+            Grid.setTutorHighlight(data.highlight_cells || []);
             if (data.technique) {
                 lastTechnique = data.technique;
             }
@@ -113,9 +112,7 @@ const Chat = (() => {
             if (!resp.ok) throw new Error(`API error: ${resp.status}`);
             const data = await resp.json();
 
-            if (data.highlight_cells) {
-                Grid.setTutorHighlight(data.highlight_cells);
-            }
+            Grid.setTutorHighlight(data.highlight_cells || []);
 
             addMessage(data.message, 'tutor');
         } catch (err) {

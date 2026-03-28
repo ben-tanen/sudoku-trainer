@@ -25,7 +25,11 @@ async def api_hint(req: HintRequest):
     filled = sum(1 for r in req.puzzle.grid for v in r if v > 0)
     log.info(f"[api/hint] filled_cells={filled}")
 
-    technique = analyze(req.puzzle.grid, req.skill_profile, seen_keys=req.seen_keys)
+    technique = analyze(
+        req.puzzle.grid, req.skill_profile,
+        seen_keys=req.seen_keys,
+        user_eliminated=req.puzzle.eliminated or None,
+    )
 
     if technique is None:
         empty_count = sum(1 for r in req.puzzle.grid for v in r if v == 0)
